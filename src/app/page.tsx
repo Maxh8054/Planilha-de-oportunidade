@@ -512,11 +512,12 @@ export default function SalesOpportunityDashboard() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [data]);
 
-  // Ranking data
+  // Ranking data - only by equipamento (column D)
   const rankingData = useMemo(() => {
     const items: Record<string, { inspecao: number; venda: number }> = {};
     filteredData.forEach(d => {
-      const name = d.equipamento || d.descricao || d.pn || 'N/A';
+      if (!d.equipamento) return;
+      const name = d.equipamento;
       if (!items[name]) items[name] = { inspecao: 0, venda: 0 };
       items[name].inspecao += d.qty;
       items[name].venda += d.quantidadeFaturada;
