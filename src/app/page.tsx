@@ -1033,7 +1033,6 @@ export default function SalesOpportunityDashboard() {
                       <div className="flex flex-wrap gap-2">
                         {criticidades.map(c => (
                           <Badge key={c} variant={criticidadeFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer"
-                            style={{ backgroundColor: criticidadeFilter.includes(c) ? CRITICITY_COLORS[c] : 'transparent', borderColor: CRITICITY_COLORS[c], color: criticidadeFilter.includes(c) ? 'white' : CRITICITY_COLORS[c] }}
                             onClick={() => toggleArrayFilter(c, criticidadeFilter, setCriticidadeFilter)}>
                             {c}
                           </Badge>
@@ -1272,7 +1271,6 @@ export default function SalesOpportunityDashboard() {
                           <span className="text-xs font-medium text-slate-500 mr-1">Status:</span>
                           {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
                             <Badge key={key} variant={oppStatusFilter.includes(key) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                              style={oppStatusFilter.includes(key) ? { backgroundColor: cfg.color, color: 'white', borderColor: cfg.color } : { borderColor: cfg.color, color: cfg.color }}
                               onClick={() => toggleArrayFilter(key, oppStatusFilter, setOppStatusFilter)}>
                               {cfg.label}
                               {oppStatusFilter.includes(key) && <X className="h-3 w-3 ml-1" />}
@@ -1286,7 +1284,6 @@ export default function SalesOpportunityDashboard() {
                             <span className="text-xs font-medium text-slate-500 mr-1">Criticidade:</span>
                             {criticidades.map(c => (
                               <Badge key={c} variant={oppCriticidadeFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                                style={oppCriticidadeFilter.includes(c) ? { backgroundColor: CRITICITY_COLORS[c], color: 'white', borderColor: CRITICITY_COLORS[c] } : { borderColor: CRITICITY_COLORS[c], color: CRITICITY_COLORS[c] }}
                                 onClick={() => toggleArrayFilter(c, oppCriticidadeFilter, setOppCriticidadeFilter)}>
                                 {c}
                                 {oppCriticidadeFilter.includes(c) && <X className="h-3 w-3 ml-1" />}
