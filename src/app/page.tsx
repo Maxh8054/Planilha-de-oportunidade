@@ -45,6 +45,8 @@ import {
   FileSpreadsheet,
   Download,
   ShoppingCart,
+  BarChart3,
+  Target,
   Package,
   Wrench,
   TrendingUp,
@@ -256,6 +258,44 @@ export default function SalesOpportunityDashboard() {
   const criticidades = useMemo(() => [...new Set(data.map(d => d.criticidade).filter(Boolean))].sort(), [data]);
   const origens = useMemo(() => [...new Set(data.map(d => d.origemAba).filter(Boolean))].sort(), [data]);
 
+  // Memoized option arrays for FilterDropdowns
+  const empresaOptions = useMemo(() => empresas.map(e => ({ value: e, label: e })), [empresas]);
+  const clienteOptions = useMemo(() => clientes.map(c => ({ value: c, label: c })), [clientes]);
+  const equipamentoOptions = useMemo(() => equipamentos.map(e => ({ value: e, label: e })), [equipamentos]);
+  const criticidadeOptions = useMemo(() => criticidades.map(c => ({ value: c, label: c })), [criticidades]);
+  const statusOptions = useMemo(() => Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label })), []);
+  const origemOptions = useMemo(() => origens.map(o => ({ value: o, label: o.replace('PAS SVS ', '') })), [origens]);
+  const monthOptions = useMemo(() => MONTHS.map(m => ({ value: m.value, label: m.label })), []);
+  const diasOptions = useMemo(() => [
+    { value: '<30', label: '< 30 dias' },
+    { value: '30-60', label: '30-60 dias' },
+    { value: '>60', label: '> 60 dias' },
+    { value: '>90', label: '> 90 dias' },
+  ] as const, []);
+  const analiseOptions = useMemo(() => [
+    { value: 'completos', label: 'Completos' },
+    { value: 'incompletos', label: 'Incompletos' },
+    { value: 'com_followup', label: 'Com Follow Up' },
+    { value: 'sem_followup', label: 'Sem Follow Up' },
+  ] as const, []);
+  const prazoOptions = useMemo(() => [
+    { value: 'atrasados', label: 'Atrasados' },
+    { value: 'este_mes', label: 'Este Mês' },
+    { value: 'futuro', label: 'Futuro' },
+  ] as const, []);
+  const periodoOptions = useMemo(() => [
+    { value: '7d', label: 'Últimos 7 dias' },
+    { value: '30d', label: 'Últimos 30 dias' },
+    { value: '90d', label: 'Últimos 90 dias' },
+    { value: '2024', label: '2024' },
+    { value: '2025', label: '2025' },
+    { value: '2026', label: '2026' },
+  ] as const, []);
+  const estoqueOptions = useMemo(() => [
+    { value: 'lic', label: 'Com LIC' },
+    { value: 'betim', label: 'Com Betim' },
+  ] as const, []);
+
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     data.forEach(d => {
@@ -263,6 +303,8 @@ export default function SalesOpportunityDashboard() {
     });
     return Array.from(years).sort().map(y => y.toString());
   }, [data]);
+
+  const yearOptions = useMemo(() => availableYears.map(y => ({ value: y, label: y })), [availableYears]);
 
   // Auto-select most recent year for chart
   const effectiveChartYear = chartYearFilter || (availableYears.length > 0 ? availableYears[availableYears.length - 1] : '');
@@ -779,7 +821,7 @@ export default function SalesOpportunityDashboard() {
         <div className="w-full px-6 py-3 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center shrink-0">
-              <TrendingUp className="h-6 w-6 text-slate-600" />
+              <Target className="h-6 w-6 text-slate-600" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-700">Dashboard de Oportunidades</h1>
@@ -952,10 +994,10 @@ export default function SalesOpportunityDashboard() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="bg-white border shadow-sm">
               <TabsTrigger value="overview" className="gap-2">
-                <TrendingUp className="h-4 w-4" /> Visão Geral
+                <BarChart3 className="h-4 w-4" /> Visão Geral
               </TabsTrigger>
               <TabsTrigger value="opportunities" className="gap-2">
-                <Package className="h-4 w-4" /> Oportunidades
+                <Target className="h-4 w-4" /> Oportunidades
               </TabsTrigger>
             </TabsList>
 
@@ -1016,23 +1058,13 @@ export default function SalesOpportunityDashboard() {
                     <CardContent className="space-y-3">
                       <Input placeholder="Buscar por PN, descrição, cliente..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                       <div className="flex flex-wrap gap-2">
-                        <FilterDropdown label="Empresa" options={empresas.map(e => ({ value: e, label: e }))} selected={empresaFilter} onChange={setEmpresaFilter} />
-                        <FilterDropdown label="Cliente" options={clientes.map(c => ({ value: c, label: c }))} selected={clienteFilter} onChange={setClienteFilter} />
-                        <FilterDropdown label="Equipamento" options={equipamentos.map(e => ({ value: e, label: e }))} selected={equipamentoFilter} onChange={setEquipamentoFilter} />
-                        <FilterDropdown label="Criticidade" options={criticidades.map(c => ({ value: c, label: c }))} selected={criticidadeFilter} onChange={setCriticidadeFilter} />
-                        <FilterDropdown label="Status" options={Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label }))} selected={statusFilter} onChange={setStatusFilter} />
-                        <FilterDropdown label="Período" options={[
-                          { value: '7d', label: 'Últimos 7 dias' },
-                          { value: '30d', label: 'Últimos 30 dias' },
-                          { value: '90d', label: 'Últimos 90 dias' },
-                          { value: '2024', label: '2024' },
-                          { value: '2025', label: '2025' },
-                          { value: '2026', label: '2026' },
-                        ]} selected={periodFilter} onChange={setPeriodFilter} />
-                        <FilterDropdown label="Estoque" options={[
-                          { value: 'lic', label: 'Com LIC' },
-                          { value: 'betim', label: 'Com Betim' },
-                        ]} selected={estoqueFilter} onChange={setEstoqueFilter} />
+                        <FilterDropdown label="Empresa" options={empresaOptions} selected={empresaFilter} onChange={setEmpresaFilter} />
+                        <FilterDropdown label="Cliente" options={clienteOptions} selected={clienteFilter} onChange={setClienteFilter} />
+                        <FilterDropdown label="Equipamento" options={equipamentoOptions} selected={equipamentoFilter} onChange={setEquipamentoFilter} />
+                        <FilterDropdown label="Criticidade" options={criticidadeOptions} selected={criticidadeFilter} onChange={setCriticidadeFilter} />
+                        <FilterDropdown label="Status" options={statusOptions} selected={statusFilter} onChange={setStatusFilter} />
+                        <FilterDropdown label="Período" options={periodoOptions} selected={periodFilter} onChange={setPeriodFilter} />
+                        <FilterDropdown label="Estoque" options={estoqueOptions} selected={estoqueFilter} onChange={setEstoqueFilter} />
                       </div>
                     </CardContent>
                   </CollapsibleContent>
@@ -1195,29 +1227,15 @@ export default function SalesOpportunityDashboard() {
                     <CardContent className="space-y-3">
                       <Input placeholder="Buscar por PN, descrição, cliente..." value={oppSearchTerm} onChange={(e) => setOppSearchTerm(e.target.value)} />
                       <div className="flex flex-wrap gap-2">
-                        <FilterDropdown label="Origem" options={origens.map(o => ({ value: o, label: o.replace('PAS SVS ', '') }))} selected={oppOrigemFilter} onChange={setOppOrigemFilter} />
-                        <FilterDropdown label="Mês" options={MONTHS.map(m => ({ value: m.value, label: m.label }))} selected={oppMonthFilter} onChange={setOppMonthFilter} />
-                        <FilterDropdown label="Ano" options={availableYears.map(y => ({ value: y, label: y }))} selected={oppYearFilter} onChange={setOppYearFilter} />
-                        <FilterDropdown label="Cliente" options={clientes.map(c => ({ value: c, label: c }))} selected={oppClienteFilter} onChange={setOppClienteFilter} />
-                        <FilterDropdown label="Status" options={Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label }))} selected={oppStatusFilter} onChange={setOppStatusFilter} />
-                        <FilterDropdown label="Criticidade" options={criticidades.map(c => ({ value: c, label: c }))} selected={oppCriticidadeFilter} onChange={setOppCriticidadeFilter} />
-                        <FilterDropdown label="Dias Aberto" options={[
-                          { value: '<30', label: '< 30 dias' },
-                          { value: '30-60', label: '30-60 dias' },
-                          { value: '>60', label: '> 60 dias' },
-                          { value: '>90', label: '> 90 dias' },
-                        ]} selected={oppDiasFilter} onChange={setOppDiasFilter} />
-                        <FilterDropdown label="Análise" options={[
-                          { value: 'completos', label: 'Completos' },
-                          { value: 'incompletos', label: 'Incompletos' },
-                          { value: 'com_followup', label: 'Com Follow Up' },
-                          { value: 'sem_followup', label: 'Sem Follow Up' },
-                        ]} selected={oppAnaliseFilter} onChange={setOppAnaliseFilter} />
-                        <FilterDropdown label="Prazo" options={[
-                          { value: 'atrasados', label: 'Atrasados' },
-                          { value: 'este_mes', label: 'Este Mês' },
-                          { value: 'futuro', label: 'Futuro' },
-                        ]} selected={oppPrazoFilter} onChange={setOppPrazoFilter} />
+                        <FilterDropdown label="Origem" options={origemOptions} selected={oppOrigemFilter} onChange={setOppOrigemFilter} />
+                        <FilterDropdown label="Mês" options={monthOptions} selected={oppMonthFilter} onChange={setOppMonthFilter} />
+                        <FilterDropdown label="Ano" options={yearOptions} selected={oppYearFilter} onChange={setOppYearFilter} />
+                        <FilterDropdown label="Cliente" options={clienteOptions} selected={oppClienteFilter} onChange={setOppClienteFilter} />
+                        <FilterDropdown label="Status" options={statusOptions} selected={oppStatusFilter} onChange={setOppStatusFilter} />
+                        <FilterDropdown label="Criticidade" options={criticidadeOptions} selected={oppCriticidadeFilter} onChange={setOppCriticidadeFilter} />
+                        <FilterDropdown label="Dias Aberto" options={diasOptions} selected={oppDiasFilter} onChange={setOppDiasFilter} />
+                        <FilterDropdown label="Análise" options={analiseOptions} selected={oppAnaliseFilter} onChange={setOppAnaliseFilter} />
+                        <FilterDropdown label="Prazo" options={prazoOptions} selected={oppPrazoFilter} onChange={setOppPrazoFilter} />
                       </div>
                     </CardContent>
                   </CollapsibleContent>

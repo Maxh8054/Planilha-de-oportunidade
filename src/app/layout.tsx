@@ -13,9 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard de Oportunidades",
-  description: "Dashboard de Oportunidades - Lundin Mining. Acompanhamento de oportunidades PAS SVS.",
-  keywords: ["Dashboard", "Oportunidades", "Lundin", "PAS SVS"],
+  title: "Oportunidades de Venda",
+  description: "Dashboard de Oportunidades de Venda - Lundin Mining. Acompanhamento de oportunidades PAS SVS, RED e Lundin.",
+  keywords: ["Dashboard", "Oportunidades", "Venda", "Lundin", "PAS SVS"],
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
