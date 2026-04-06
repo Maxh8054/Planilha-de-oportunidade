@@ -65,6 +65,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { FilterDropdown } from '@/components/FilterDropdown';
 
 import type { OpportunityRecord } from '@/components/opportunity/types';
 import {
@@ -217,9 +218,9 @@ export default function SalesOpportunityDashboard() {
   const [equipamentoFilter, setEquipamentoFilter] = useState<string[]>([]);
   const [criticidadeFilter, setCriticidadeFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [periodFilter, setPeriodFilter] = useState('all');
+  const [periodFilter, setPeriodFilter] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [estoqueFilter, setEstoqueFilter] = useState<'all' | 'lic' | 'betim'>('all');
+  const [estoqueFilter, setEstoqueFilter] = useState<string[]>([]);
   const [rankingType, setRankingType] = useState<'inspecao' | 'venda'>('inspecao');
   const [chartYearFilter, setChartYearFilter] = useState<string>('');
   const [showOverviewFilters, setShowOverviewFilters] = useState(false);
@@ -290,20 +291,33 @@ export default function SalesOpportunityDashboard() {
     if (equipamentoFilter.length > 0) result = result.filter(d => equipamentoFilter.includes(d.equipamento));
     if (criticidadeFilter.length > 0) result = result.filter(d => criticidadeFilter.includes(d.criticidade));
     if (statusFilter.length > 0) result = result.filter(d => statusFilter.includes(d.status));
-    if (periodFilter !== 'all') {
+    if (periodFilter.length > 0) {
       const now = new Date();
-      const filterDate = new Date();
-      switch (periodFilter) {
-        case '7d': filterDate.setDate(now.getDate() - 7); result = result.filter(d => d.dataAbertura && d.dataAbertura >= filterDate); break;
-        case '30d': filterDate.setDate(now.getDate() - 30); result = result.filter(d => d.dataAbertura && d.dataAbertura >= filterDate); break;
-        case '90d': filterDate.setDate(now.getDate() - 90); result = result.filter(d => d.dataAbertura && d.dataAbertura >= filterDate); break;
-        case '2024': result = result.filter(d => d.dataAbertura && d.dataAbertura.getFullYear() === 2024); break;
-        case '2025': result = result.filter(d => d.dataAbertura && d.dataAbertura.getFullYear() === 2025); break;
-        case '2026': result = result.filter(d => d.dataAbertura && d.dataAbertura.getFullYear() === 2026); break;
-      }
+      result = result.filter(d => {
+        if (!d.dataAbertura) return false;
+        for (const p of periodFilter) {
+          const filterDate = new Date();
+          switch (p) {
+            case '7d': filterDate.setDate(now.getDate() - 7); if (d.dataAbertura >= filterDate) return true; break;
+            case '30d': filterDate.setDate(now.getDate() - 30); if (d.dataAbertura >= filterDate) return true; break;
+            case '90d': filterDate.setDate(now.getDate() - 90); if (d.dataAbertura >= filterDate) return true; break;
+            case '2024': if (d.dataAbertura.getFullYear() === 2024) return true; break;
+            case '2025': if (d.dataAbertura.getFullYear() === 2025) return true; break;
+            case '2026': if (d.dataAbertura.getFullYear() === 2026) return true; break;
+          }
+        }
+        return false;
+      });
     }
-    if (estoqueFilter === 'lic') result = result.filter(d => d.lic > 0);
-    else if (estoqueFilter === 'betim') result = result.filter(d => d.betim > 0);
+    if (estoqueFilter.length > 0) {
+      result = result.filter(d => {
+        for (const e of estoqueFilter) {
+          if (e === 'lic' && d.lic > 0) return true;
+          if (e === 'betim' && d.betim > 0) return true;
+        }
+        return false;
+      });
+    }
     return result;
   }, [data, searchTerm, empresaFilter, clienteFilter, equipamentoFilter, criticidadeFilter, statusFilter, periodFilter, estoqueFilter]);
 
@@ -729,8 +743,8 @@ export default function SalesOpportunityDashboard() {
 
   const clearFilters = () => {
     setEmpresaFilter([]); setClienteFilter([]); setEquipamentoFilter([]);
-    setCriticidadeFilter([]); setStatusFilter([]); setPeriodFilter('all');
-    setSearchTerm(''); setEstoqueFilter('all');
+    setCriticidadeFilter([]); setStatusFilter([]); setPeriodFilter([]);
+    setSearchTerm(''); setEstoqueFilter([]);
   };
   const clearOppFilters = () => {
     setOppMonthFilter([]); setOppYearFilter([]); setOppClienteFilter([]);
@@ -738,11 +752,6 @@ export default function SalesOpportunityDashboard() {
     setOppAnaliseFilter([]); setOppPrazoFilter([]); setOppSearchTerm('');
     setOppOrigemFilter([]);
   };
-  const toggleArrayFilter = (value: string, currentArray: string[], setArray: (arr: string[]) => void) => {
-    if (currentArray.includes(value)) setArray(currentArray.filter(v => v !== value));
-    else setArray([...currentArray, value]);
-  };
-
   const openFollowUpModal = (record: OpportunityRecord) => {
     setFollowUpRecord(record);
     setFollowUpText(record.followUpLocal || record.followUpComercial || '');
@@ -988,12 +997,12 @@ export default function SalesOpportunityDashboard() {
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Filter className="h-5 w-5" /> Filtros
-                          {(empresaFilter.length + clienteFilter.length + equipamentoFilter.length + criticidadeFilter.length + statusFilter.length + (periodFilter !== 'all' ? 1 : 0) + (estoqueFilter !== 'all' ? 1 : 0) + (searchTerm ? 1 : 0)) > 0 && (
-                            <Badge variant="secondary" className="ml-1 text-xs">{(empresaFilter.length + clienteFilter.length + equipamentoFilter.length + criticidadeFilter.length + statusFilter.length + (periodFilter !== 'all' ? 1 : 0) + (estoqueFilter !== 'all' ? 1 : 0) + (searchTerm ? 1 : 0))} ativos</Badge>
+                          {(empresaFilter.length + clienteFilter.length + equipamentoFilter.length + criticidadeFilter.length + statusFilter.length + periodFilter.length + estoqueFilter.length + (searchTerm ? 1 : 0)) > 0 && (
+                            <Badge variant="secondary" className="ml-1 text-xs">{(empresaFilter.length + clienteFilter.length + equipamentoFilter.length + criticidadeFilter.length + statusFilter.length + periodFilter.length + estoqueFilter.length + (searchTerm ? 1 : 0))} ativos</Badge>
                           )}
                         </CardTitle>
                         <div className="flex items-center gap-2">
-                          {(empresaFilter.length + clienteFilter.length + equipamentoFilter.length + criticidadeFilter.length + statusFilter.length + (periodFilter !== 'all' ? 1 : 0) + (estoqueFilter !== 'all' ? 1 : 0) + (searchTerm ? 1 : 0)) > 0 && (
+                          {(empresaFilter.length + clienteFilter.length + equipamentoFilter.length + criticidadeFilter.length + statusFilter.length + periodFilter.length + estoqueFilter.length + (searchTerm ? 1 : 0)) > 0 && (
                             <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); clearFilters(); }}>
                               <X className="h-4 w-4 mr-1" /> Limpar
                             </Button>
@@ -1004,49 +1013,26 @@ export default function SalesOpportunityDashboard() {
                     </CardHeader>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <CardContent className="space-y-2">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                        <div className="sm:col-span-2 lg:col-span-2">
-                          <Input placeholder="Buscar por PN, descrição, cliente..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                        </div>
-                        <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                          <SelectTrigger className="w-full"><SelectValue placeholder="Período" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todo período</SelectItem>
-                            <SelectItem value="7d">Últimos 7 dias</SelectItem>
-                            <SelectItem value="30d">Últimos 30 dias</SelectItem>
-                            <SelectItem value="90d">Últimos 90 dias</SelectItem>
-                            <SelectItem value="2024">2024</SelectItem>
-                            <SelectItem value="2025">2025</SelectItem>
-                            <SelectItem value="2026">2026</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select value={estoqueFilter} onValueChange={(v) => setEstoqueFilter(v as 'all' | 'lic' | 'betim')}>
-                          <SelectTrigger className="w-full"><SelectValue placeholder="Estoque" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todo estoque</SelectItem>
-                            <SelectItem value="lic">Com LIC</SelectItem>
-                            <SelectItem value="betim">Com Betim</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <CardContent className="space-y-3">
+                      <Input placeholder="Buscar por PN, descrição, cliente..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                       <div className="flex flex-wrap gap-2">
-                        {criticidades.map(c => (
-                          <Badge key={c} variant={criticidadeFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer"
-                            onClick={() => toggleArrayFilter(c, criticidadeFilter, setCriticidadeFilter)}>
-                            {c}
-                          </Badge>
-                        ))}
-                        {statusFilter.map(s => (
-                          <Badge key={s} variant="default" className="cursor-pointer" onClick={() => toggleArrayFilter(s, statusFilter, setStatusFilter)}>
-                            {STATUS_CONFIG[s]?.label || s} <X className="h-3 w-3 ml-1" />
-                          </Badge>
-                        ))}
-                        {empresaFilter.map(e => (
-                          <Badge key={e} variant="default" className="cursor-pointer" onClick={() => toggleArrayFilter(e, empresaFilter, setEmpresaFilter)}>
-                            {e} <X className="h-3 w-3 ml-1" />
-                          </Badge>
-                        ))}
+                        <FilterDropdown label="Empresa" options={empresas.map(e => ({ value: e, label: e }))} selected={empresaFilter} onChange={setEmpresaFilter} />
+                        <FilterDropdown label="Cliente" options={clientes.map(c => ({ value: c, label: c }))} selected={clienteFilter} onChange={setClienteFilter} />
+                        <FilterDropdown label="Equipamento" options={equipamentos.map(e => ({ value: e, label: e }))} selected={equipamentoFilter} onChange={setEquipamentoFilter} />
+                        <FilterDropdown label="Criticidade" options={criticidades.map(c => ({ value: c, label: c }))} selected={criticidadeFilter} onChange={setCriticidadeFilter} />
+                        <FilterDropdown label="Status" options={Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label }))} selected={statusFilter} onChange={setStatusFilter} />
+                        <FilterDropdown label="Período" options={[
+                          { value: '7d', label: 'Últimos 7 dias' },
+                          { value: '30d', label: 'Últimos 30 dias' },
+                          { value: '90d', label: 'Últimos 90 dias' },
+                          { value: '2024', label: '2024' },
+                          { value: '2025', label: '2025' },
+                          { value: '2026', label: '2026' },
+                        ]} selected={periodFilter} onChange={setPeriodFilter} />
+                        <FilterDropdown label="Estoque" options={[
+                          { value: 'lic', label: 'Com LIC' },
+                          { value: 'betim', label: 'Com Betim' },
+                        ]} selected={estoqueFilter} onChange={setEstoqueFilter} />
                       </div>
                     </CardContent>
                   </CollapsibleContent>
@@ -1207,126 +1193,31 @@ export default function SalesOpportunityDashboard() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <CardContent className="space-y-3">
+                      <Input placeholder="Buscar por PN, descrição, cliente..." value={oppSearchTerm} onChange={(e) => setOppSearchTerm(e.target.value)} />
                       <div className="flex flex-wrap gap-2">
-                        <Input placeholder="Buscar por PN, descrição, cliente..." value={oppSearchTerm} onChange={(e) => setOppSearchTerm(e.target.value)} className="w-full sm:w-[240px]" />
-                      </div>
-
-                      <div className="space-y-3">
-                        {/* Origem badges */}
-                        {origens.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-xs font-medium text-slate-500 mr-1">Origem:</span>
-                            {origens.map(o => (
-                              <Badge key={o} variant={oppOrigemFilter.includes(o) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                                onClick={() => toggleArrayFilter(o, oppOrigemFilter, setOppOrigemFilter)}>
-                                {o.replace('PAS SVS ', '')}
-                                {oppOrigemFilter.includes(o) && <X className="h-3 w-3 ml-1" />}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Mês badges */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs font-medium text-slate-500 mr-1">Mês:</span>
-                          {MONTHS.map(m => (
-                            <Badge key={m.value} variant={oppMonthFilter.includes(m.value) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                              onClick={() => toggleArrayFilter(m.value, oppMonthFilter, setOppMonthFilter)}>
-                              {m.label}
-                              {oppMonthFilter.includes(m.value) && <X className="h-3 w-3 ml-1" />}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        {/* Ano badges */}
-                        {availableYears.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-xs font-medium text-slate-500 mr-1">Ano:</span>
-                            {availableYears.map(y => (
-                              <Badge key={y} variant={oppYearFilter.includes(y) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                                onClick={() => toggleArrayFilter(y, oppYearFilter, setOppYearFilter)}>
-                                {y}
-                                {oppYearFilter.includes(y) && <X className="h-3 w-3 ml-1" />}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Cliente badges */}
-                        {clientes.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-xs font-medium text-slate-500 mr-1">Cliente:</span>
-                            {clientes.map(c => (
-                              <Badge key={c} variant={oppClienteFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                                onClick={() => toggleArrayFilter(c, oppClienteFilter, setOppClienteFilter)}>
-                                {c}
-                                {oppClienteFilter.includes(c) && <X className="h-3 w-3 ml-1" />}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Status badges */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs font-medium text-slate-500 mr-1">Status:</span>
-                          {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                            <Badge key={key} variant={oppStatusFilter.includes(key) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                              onClick={() => toggleArrayFilter(key, oppStatusFilter, setOppStatusFilter)}>
-                              {cfg.label}
-                              {oppStatusFilter.includes(key) && <X className="h-3 w-3 ml-1" />}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        {/* Criticidade badges */}
-                        {criticidades.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-xs font-medium text-slate-500 mr-1">Criticidade:</span>
-                            {criticidades.map(c => (
-                              <Badge key={c} variant={oppCriticidadeFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                                onClick={() => toggleArrayFilter(c, oppCriticidadeFilter, setOppCriticidadeFilter)}>
-                                {c}
-                                {oppCriticidadeFilter.includes(c) && <X className="h-3 w-3 ml-1" />}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Dias badges */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs font-medium text-slate-500 mr-1">Dias Aberto:</span>
-                          {[{ v: '<30', l: '< 30 dias' }, { v: '30-60', l: '30-60 dias' }, { v: '>60', l: '> 60 dias' }, { v: '>90', l: '> 90 dias' }].map(d => (
-                            <Badge key={d.v} variant={oppDiasFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                              onClick={() => toggleArrayFilter(d.v, oppDiasFilter, setOppDiasFilter)}>
-                              {d.l}
-                              {oppDiasFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        {/* Análise badges */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs font-medium text-slate-500 mr-1">Análise:</span>
-                          {[{ v: 'completos', l: 'Completos' }, { v: 'incompletos', l: 'Incompletos' }, { v: 'com_followup', l: 'Com Follow Up' }, { v: 'sem_followup', l: 'Sem Follow Up' }].map(d => (
-                            <Badge key={d.v} variant={oppAnaliseFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                              onClick={() => toggleArrayFilter(d.v, oppAnaliseFilter, setOppAnaliseFilter)}>
-                              {d.l}
-                              {oppAnaliseFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        {/* Prazo badges */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-xs font-medium text-slate-500 mr-1">Prazo:</span>
-                          {[{ v: 'atrasados', l: 'Atrasados' }, { v: 'este_mes', l: 'Este Mês' }, { v: 'futuro', l: 'Futuro' }].map(d => (
-                            <Badge key={d.v} variant={oppPrazoFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                              onClick={() => toggleArrayFilter(d.v, oppPrazoFilter, setOppPrazoFilter)}>
-                              {d.l}
-                              {oppPrazoFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
-                            </Badge>
-                          ))}
-                        </div>
+                        <FilterDropdown label="Origem" options={origens.map(o => ({ value: o, label: o.replace('PAS SVS ', '') }))} selected={oppOrigemFilter} onChange={setOppOrigemFilter} />
+                        <FilterDropdown label="Mês" options={MONTHS.map(m => ({ value: m.value, label: m.label }))} selected={oppMonthFilter} onChange={setOppMonthFilter} />
+                        <FilterDropdown label="Ano" options={availableYears.map(y => ({ value: y, label: y }))} selected={oppYearFilter} onChange={setOppYearFilter} />
+                        <FilterDropdown label="Cliente" options={clientes.map(c => ({ value: c, label: c }))} selected={oppClienteFilter} onChange={setOppClienteFilter} />
+                        <FilterDropdown label="Status" options={Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label }))} selected={oppStatusFilter} onChange={setOppStatusFilter} />
+                        <FilterDropdown label="Criticidade" options={criticidades.map(c => ({ value: c, label: c }))} selected={oppCriticidadeFilter} onChange={setOppCriticidadeFilter} />
+                        <FilterDropdown label="Dias Aberto" options={[
+                          { value: '<30', label: '< 30 dias' },
+                          { value: '30-60', label: '30-60 dias' },
+                          { value: '>60', label: '> 60 dias' },
+                          { value: '>90', label: '> 90 dias' },
+                        ]} selected={oppDiasFilter} onChange={setOppDiasFilter} />
+                        <FilterDropdown label="Análise" options={[
+                          { value: 'completos', label: 'Completos' },
+                          { value: 'incompletos', label: 'Incompletos' },
+                          { value: 'com_followup', label: 'Com Follow Up' },
+                          { value: 'sem_followup', label: 'Sem Follow Up' },
+                        ]} selected={oppAnaliseFilter} onChange={setOppAnaliseFilter} />
+                        <FilterDropdown label="Prazo" options={[
+                          { value: 'atrasados', label: 'Atrasados' },
+                          { value: 'este_mes', label: 'Este Mês' },
+                          { value: 'futuro', label: 'Futuro' },
+                        ]} selected={oppPrazoFilter} onChange={setOppPrazoFilter} />
                       </div>
                     </CardContent>
                   </CollapsibleContent>
