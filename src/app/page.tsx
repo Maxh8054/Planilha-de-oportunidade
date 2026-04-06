@@ -222,17 +222,17 @@ export default function SalesOpportunityDashboard() {
   const [rankingType, setRankingType] = useState<'inspecao' | 'venda'>('inspecao');
   const [chartYearFilter, setChartYearFilter] = useState<string>('');
 
-  // Opportunities Tab Filters (single-select)
-  const [oppMonthFilter, setOppMonthFilter] = useState<string>('');
-  const [oppYearFilter, setOppYearFilter] = useState<string>('');
-  const [oppClienteFilter, setOppClienteFilter] = useState<string>('');
-  const [oppStatusFilter, setOppStatusFilter] = useState<string>('');
-  const [oppCriticidadeFilter, setOppCriticidadeFilter] = useState<string>('');
-  const [oppDiasFilter, setOppDiasFilter] = useState<string>('');
-  const [oppAnaliseFilter, setOppAnaliseFilter] = useState<string>('');
-  const [oppPrazoFilter, setOppPrazoFilter] = useState<string>('');
+  // Opportunities Tab Filters (multi-select)
+  const [oppMonthFilter, setOppMonthFilter] = useState<string[]>([]);
+  const [oppYearFilter, setOppYearFilter] = useState<string[]>([]);
+  const [oppClienteFilter, setOppClienteFilter] = useState<string[]>([]);
+  const [oppStatusFilter, setOppStatusFilter] = useState<string[]>([]);
+  const [oppCriticidadeFilter, setOppCriticidadeFilter] = useState<string[]>([]);
+  const [oppDiasFilter, setOppDiasFilter] = useState<string[]>([]);
+  const [oppAnaliseFilter, setOppAnaliseFilter] = useState<string[]>([]);
+  const [oppPrazoFilter, setOppPrazoFilter] = useState<string[]>([]);
   const [oppSearchTerm, setOppSearchTerm] = useState('');
-  const [oppOrigemFilter, setOppOrigemFilter] = useState<string>('');
+  const [oppOrigemFilter, setOppOrigemFilter] = useState<string[]>([]);
 
   // Follow Up Modal State
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
@@ -316,38 +316,44 @@ export default function SalesOpportunityDashboard() {
         d.descricao?.toLowerCase().includes(search)
       );
     }
-    if (oppOrigemFilter) result = result.filter(d => oppOrigemFilter === d.origemAba);
-    if (oppMonthFilter) result = result.filter(d => d.dataAbertura && oppMonthFilter === String(d.dataAbertura.getMonth() + 1));
-    if (oppYearFilter) result = result.filter(d => d.dataAbertura && oppYearFilter === String(d.dataAbertura.getFullYear()));
-    if (oppClienteFilter) result = result.filter(d => oppClienteFilter === d.cliente);
-    if (oppStatusFilter) result = result.filter(d => oppStatusFilter === d.status);
-    if (oppCriticidadeFilter) result = result.filter(d => oppCriticidadeFilter === d.criticidade);
-    if (oppDiasFilter) {
+    if (oppOrigemFilter.length > 0) result = result.filter(d => oppOrigemFilter.includes(d.origemAba));
+    if (oppMonthFilter.length > 0) result = result.filter(d => d.dataAbertura && oppMonthFilter.includes(String(d.dataAbertura.getMonth() + 1)));
+    if (oppYearFilter.length > 0) result = result.filter(d => d.dataAbertura && oppYearFilter.includes(String(d.dataAbertura.getFullYear())));
+    if (oppClienteFilter.length > 0) result = result.filter(d => oppClienteFilter.includes(d.cliente));
+    if (oppStatusFilter.length > 0) result = result.filter(d => oppStatusFilter.includes(d.status));
+    if (oppCriticidadeFilter.length > 0) result = result.filter(d => oppCriticidadeFilter.includes(d.criticidade));
+    if (oppDiasFilter.length > 0) {
       result = result.filter(d => {
-        if (oppDiasFilter === '<30' && d.diasEmAberto < 30) return true;
-        if (oppDiasFilter === '30-60' && d.diasEmAberto >= 30 && d.diasEmAberto <= 60) return true;
-        if (oppDiasFilter === '>60' && d.diasEmAberto > 60) return true;
-        if (oppDiasFilter === '>90' && d.diasEmAberto > 90) return true;
+        for (const f of oppDiasFilter) {
+          if (f === '<30' && d.diasEmAberto < 30) return true;
+          if (f === '30-60' && d.diasEmAberto >= 30 && d.diasEmAberto <= 60) return true;
+          if (f === '>60' && d.diasEmAberto > 60) return true;
+          if (f === '>90' && d.diasEmAberto > 90) return true;
+        }
         return false;
       });
     }
-    if (oppAnaliseFilter) {
+    if (oppAnaliseFilter.length > 0) {
       result = result.filter(d => {
-        if (oppAnaliseFilter === 'completos' && d.quantidadeFaturada > 0 && d.quantidadeFaturada >= d.qty) return true;
-        if (oppAnaliseFilter === 'incompletos' && (d.quantidadeFaturada === 0 || d.quantidadeFaturada < d.qty)) return true;
-        if (oppAnaliseFilter === 'com_followup' && (d.followUpComercial || d.followUpLocal)) return true;
-        if (oppAnaliseFilter === 'sem_followup' && !d.followUpComercial && !d.followUpLocal) return true;
+        for (const f of oppAnaliseFilter) {
+          if (f === 'completos' && d.quantidadeFaturada > 0 && d.quantidadeFaturada >= d.qty) return true;
+          if (f === 'incompletos' && (d.quantidadeFaturada === 0 || d.quantidadeFaturada < d.qty)) return true;
+          if (f === 'com_followup' && (d.followUpComercial || d.followUpLocal)) return true;
+          if (f === 'sem_followup' && !d.followUpComercial && !d.followUpLocal) return true;
+        }
         return false;
       });
     }
-    if (oppPrazoFilter) {
+    if (oppPrazoFilter.length > 0) {
       const now = new Date();
       const cm = now.getMonth();
       const cy = now.getFullYear();
       result = result.filter(d => {
-        if (oppPrazoFilter === 'atrasados' && d.dataEntregaSolicitada && d.dataEntregaSolicitada < now && d.status !== 'vendido') return true;
-        if (oppPrazoFilter === 'este_mes' && d.dataEntregaSolicitada && d.dataEntregaSolicitada.getMonth() === cm && d.dataEntregaSolicitada.getFullYear() === cy) return true;
-        if (oppPrazoFilter === 'futuro' && d.dataEntregaSolicitada && d.dataEntregaSolicitada > now) return true;
+        for (const f of oppPrazoFilter) {
+          if (f === 'atrasados' && d.dataEntregaSolicitada && d.dataEntregaSolicitada < now && d.status !== 'vendido') return true;
+          if (f === 'este_mes' && d.dataEntregaSolicitada && d.dataEntregaSolicitada.getMonth() === cm && d.dataEntregaSolicitada.getFullYear() === cy) return true;
+          if (f === 'futuro' && d.dataEntregaSolicitada && d.dataEntregaSolicitada > now) return true;
+        }
         return false;
       });
     }
@@ -724,10 +730,10 @@ export default function SalesOpportunityDashboard() {
     setSearchTerm(''); setEstoqueFilter('all');
   };
   const clearOppFilters = () => {
-    setOppMonthFilter(''); setOppYearFilter(''); setOppClienteFilter('');
-    setOppStatusFilter(''); setOppCriticidadeFilter(''); setOppDiasFilter('');
-    setOppAnaliseFilter(''); setOppPrazoFilter(''); setOppSearchTerm('');
-    setOppOrigemFilter('');
+    setOppMonthFilter([]); setOppYearFilter([]); setOppClienteFilter([]);
+    setOppStatusFilter([]); setOppCriticidadeFilter([]); setOppDiasFilter([]);
+    setOppAnaliseFilter([]); setOppPrazoFilter([]); setOppSearchTerm('');
+    setOppOrigemFilter([]);
   };
   const toggleArrayFilter = (value: string, currentArray: string[], setArray: (arr: string[]) => void) => {
     if (currentArray.includes(value)) setArray(currentArray.filter(v => v !== value));
@@ -1179,107 +1185,124 @@ export default function SalesOpportunityDashboard() {
                     <Input placeholder="Buscar por PN, descrição, cliente..." value={oppSearchTerm} onChange={(e) => setOppSearchTerm(e.target.value)} className="w-full sm:w-[240px]" />
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                    {/* Origem */}
-                    <Select value={oppOrigemFilter} onValueChange={(v) => setOppOrigemFilter(v === '__all__' ? '' : v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Origem" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todas origens</SelectItem>
+                  <div className="space-y-3">
+                    {/* Origem badges */}
+                    {origens.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-medium text-slate-500 mr-1">Origem:</span>
                         {origens.map(o => (
-                          <SelectItem key={o} value={o}>{o.replace('PAS SVS ', '')}</SelectItem>
+                          <Badge key={o} variant={oppOrigemFilter.includes(o) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                            onClick={() => toggleArrayFilter(o, oppOrigemFilter, setOppOrigemFilter)}>
+                            {o.replace('PAS SVS ', '')}
+                            {oppOrigemFilter.includes(o) && <X className="h-3 w-3 ml-1" />}
+                          </Badge>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    )}
 
-                    {/* Mês */}
-                    <Select value={oppMonthFilter} onValueChange={(v) => setOppMonthFilter(v === '__all__' ? '' : v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Mês" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todos meses</SelectItem>
-                        {MONTHS.map(m => (
-                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {/* Mês badges */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs font-medium text-slate-500 mr-1">Mês:</span>
+                      {MONTHS.map(m => (
+                        <Badge key={m.value} variant={oppMonthFilter.includes(m.value) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                          onClick={() => toggleArrayFilter(m.value, oppMonthFilter, setOppMonthFilter)}>
+                          {m.label}
+                          {oppMonthFilter.includes(m.value) && <X className="h-3 w-3 ml-1" />}
+                        </Badge>
+                      ))}
+                    </div>
 
-                    {/* Ano */}
-                    <Select value={oppYearFilter} onValueChange={(v) => setOppYearFilter(v === '__all__' ? '' : v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Ano" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todos anos</SelectItem>
+                    {/* Ano badges */}
+                    {availableYears.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-medium text-slate-500 mr-1">Ano:</span>
                         {availableYears.map(y => (
-                          <SelectItem key={y} value={y}>{y}</SelectItem>
+                          <Badge key={y} variant={oppYearFilter.includes(y) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                            onClick={() => toggleArrayFilter(y, oppYearFilter, setOppYearFilter)}>
+                            {y}
+                            {oppYearFilter.includes(y) && <X className="h-3 w-3 ml-1" />}
+                          </Badge>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    )}
 
-                    {/* Cliente */}
-                    <Select value={oppClienteFilter} onValueChange={(v) => setOppClienteFilter(v === '__all__' ? '' : v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Cliente" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todos clientes</SelectItem>
+                    {/* Cliente badges */}
+                    {clientes.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-medium text-slate-500 mr-1">Cliente:</span>
                         {clientes.map(c => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                          <Badge key={c} variant={oppClienteFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                            onClick={() => toggleArrayFilter(c, oppClienteFilter, setOppClienteFilter)}>
+                            {c}
+                            {oppClienteFilter.includes(c) && <X className="h-3 w-3 ml-1" />}
+                          </Badge>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    )}
 
-                    {/* Status */}
-                    <Select value={oppStatusFilter} onValueChange={(v) => setOppStatusFilter(v === '__all__' ? '' : v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Status" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todos status</SelectItem>
-                        {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                          <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {/* Status badges */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs font-medium text-slate-500 mr-1">Status:</span>
+                      {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                        <Badge key={key} variant={oppStatusFilter.includes(key) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                          style={oppStatusFilter.includes(key) ? { backgroundColor: cfg.color, color: 'white', borderColor: cfg.color } : { borderColor: cfg.color, color: cfg.color }}
+                          onClick={() => toggleArrayFilter(key, oppStatusFilter, setOppStatusFilter)}>
+                          {cfg.label}
+                          {oppStatusFilter.includes(key) && <X className="h-3 w-3 ml-1" />}
+                        </Badge>
+                      ))}
+                    </div>
 
-                    {/* Criticidade */}
-                    <Select value={oppCriticidadeFilter} onValueChange={(v) => setOppCriticidadeFilter(v === '__all__' ? '' : v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Criticidade" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todas</SelectItem>
+                    {/* Criticidade badges */}
+                    {criticidades.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-medium text-slate-500 mr-1">Criticidade:</span>
                         {criticidades.map(c => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                          <Badge key={c} variant={oppCriticidadeFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                            style={oppCriticidadeFilter.includes(c) ? { backgroundColor: CRITICITY_COLORS[c], color: 'white', borderColor: CRITICITY_COLORS[c] } : { borderColor: CRITICITY_COLORS[c], color: CRITICITY_COLORS[c] }}
+                            onClick={() => toggleArrayFilter(c, oppCriticidadeFilter, setOppCriticidadeFilter)}>
+                            {c}
+                            {oppCriticidadeFilter.includes(c) && <X className="h-3 w-3 ml-1" />}
+                          </Badge>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    )}
 
-                    {/* Dias Aberto */}
-                    <Select value={oppDiasFilter} onValueChange={(v) => setOppDiasFilter(v === '__all__' ? '' : v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Dias em Aberto" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todos</SelectItem>
-                        <SelectItem value="<30">&lt; 30 dias</SelectItem>
-                        <SelectItem value="30-60">30-60 dias</SelectItem>
-                        <SelectItem value=">60">&gt; 60 dias</SelectItem>
-                        <SelectItem value=">90">&gt; 90 dias</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {/* Dias badges */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs font-medium text-slate-500 mr-1">Dias Aberto:</span>
+                      {[{ v: '<30', l: '< 30 dias' }, { v: '30-60', l: '30-60 dias' }, { v: '>60', l: '> 60 dias' }, { v: '>90', l: '> 90 dias' }].map(d => (
+                        <Badge key={d.v} variant={oppDiasFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                          onClick={() => toggleArrayFilter(d.v, oppDiasFilter, setOppDiasFilter)}>
+                          {d.l}
+                          {oppDiasFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
+                        </Badge>
+                      ))}
+                    </div>
 
-                    {/* Análise */}
-                    <Select value={oppAnaliseFilter} onValueChange={(v) => setOppAnaliseFilter(v === '__all__' ? '' : v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Análise" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todas</SelectItem>
-                        <SelectItem value="completos">Completos</SelectItem>
-                        <SelectItem value="incompletos">Incompletos</SelectItem>
-                        <SelectItem value="com_followup">Com Follow Up</SelectItem>
-                        <SelectItem value="sem_followup">Sem Follow Up</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {/* Análise badges */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs font-medium text-slate-500 mr-1">Análise:</span>
+                      {[{ v: 'completos', l: 'Completos' }, { v: 'incompletos', l: 'Incompletos' }, { v: 'com_followup', l: 'Com Follow Up' }, { v: 'sem_followup', l: 'Sem Follow Up' }].map(d => (
+                        <Badge key={d.v} variant={oppAnaliseFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                          onClick={() => toggleArrayFilter(d.v, oppAnaliseFilter, setOppAnaliseFilter)}>
+                          {d.l}
+                          {oppAnaliseFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
+                        </Badge>
+                      ))}
+                    </div>
 
-                    {/* Prazo */}
-                    <Select value={oppPrazoFilter} onValueChange={(v) => setOppPrazoFilter(v === '__all__' ? '' : v)}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Prazo Solicitado" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__all__">Todos</SelectItem>
-                        <SelectItem value="atrasados">Atrasados</SelectItem>
-                        <SelectItem value="este_mes">Este Mês</SelectItem>
-                        <SelectItem value="futuro">Futuro</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {/* Prazo badges */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs font-medium text-slate-500 mr-1">Prazo:</span>
+                      {[{ v: 'atrasados', l: 'Atrasados' }, { v: 'este_mes', l: 'Este Mês' }, { v: 'futuro', l: 'Futuro' }].map(d => (
+                        <Badge key={d.v} variant={oppPrazoFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                          onClick={() => toggleArrayFilter(d.v, oppPrazoFilter, setOppPrazoFilter)}>
+                          {d.l}
+                          {oppPrazoFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1339,7 +1362,7 @@ export default function SalesOpportunityDashboard() {
                       <TableHeader className="sticky top-0 bg-slate-100 z-10">
                         <TableRow>
                           <TableHead className="font-semibold">Follow Up</TableHead>
-                          <TableHead className="font-semibold">Origem</TableHead>
+                          <TableHead className="font-semibold">Equipamento</TableHead>
                           <TableHead className="font-semibold">PN</TableHead>
                           <TableHead className="font-semibold">Descrição</TableHead>
                           <TableHead className="font-semibold">Cliente</TableHead>
@@ -1375,9 +1398,7 @@ export default function SalesOpportunityDashboard() {
                                 )}
                               </Button>
                             </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs">{row.origemAba?.replace('PAS SVS ', '') || '-'}</Badge>
-                            </TableCell>
+                            <TableCell className="max-w-[160px] truncate" title={row.equipamento}>{row.equipamento || '-'}</TableCell>
                             <TableCell className="font-mono text-sm">{row.pn || '-'}</TableCell>
                             <TableCell className="max-w-[200px] truncate" title={row.partname || row.descricao}>{row.partname || row.descricao || '-'}</TableCell>
                             <TableCell>{row.cliente || '-'}</TableCell>
