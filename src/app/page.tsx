@@ -64,6 +64,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 import type { OpportunityRecord } from '@/components/opportunity/types';
 import {
@@ -221,6 +222,8 @@ export default function SalesOpportunityDashboard() {
   const [estoqueFilter, setEstoqueFilter] = useState<'all' | 'lic' | 'betim'>('all');
   const [rankingType, setRankingType] = useState<'inspecao' | 'venda'>('inspecao');
   const [chartYearFilter, setChartYearFilter] = useState<string>('');
+  const [showOverviewFilters, setShowOverviewFilters] = useState(false);
+  const [showOppFilters, setShowOppFilters] = useState(false);
 
   // Opportunities Tab Filters (multi-select)
   const [oppMonthFilter, setOppMonthFilter] = useState<string[]>([]);
@@ -977,65 +980,79 @@ export default function SalesOpportunityDashboard() {
                 </Card>
               </div>
 
-              {/* Filters */}
-              <Card className="border shadow-sm bg-white">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Filter className="h-5 w-5" /> Filtros
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" onClick={clearFilters}>
-                      <X className="h-4 w-4 mr-1" /> Limpar
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                    <div className="sm:col-span-2 lg:col-span-2">
-                      <Input placeholder="Buscar por PN, descrição, cliente..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                    </div>
-                    <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Período" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todo período</SelectItem>
-                        <SelectItem value="7d">Últimos 7 dias</SelectItem>
-                        <SelectItem value="30d">Últimos 30 dias</SelectItem>
-                        <SelectItem value="90d">Últimos 90 dias</SelectItem>
-                        <SelectItem value="2024">2024</SelectItem>
-                        <SelectItem value="2025">2025</SelectItem>
-                        <SelectItem value="2026">2026</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={estoqueFilter} onValueChange={(v) => setEstoqueFilter(v as 'all' | 'lic' | 'betim')}>
-                      <SelectTrigger className="w-full"><SelectValue placeholder="Estoque" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todo estoque</SelectItem>
-                        <SelectItem value="lic">Com LIC</SelectItem>
-                        <SelectItem value="betim">Com Betim</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {criticidades.map(c => (
-                      <Badge key={c} variant={criticidadeFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer"
-                        style={{ backgroundColor: criticidadeFilter.includes(c) ? CRITICITY_COLORS[c] : 'transparent', borderColor: CRITICITY_COLORS[c], color: criticidadeFilter.includes(c) ? 'white' : CRITICITY_COLORS[c] }}
-                        onClick={() => toggleArrayFilter(c, criticidadeFilter, setCriticidadeFilter)}>
-                        {c}
-                      </Badge>
-                    ))}
-                    {statusFilter.map(s => (
-                      <Badge key={s} variant="default" className="cursor-pointer" onClick={() => toggleArrayFilter(s, statusFilter, setStatusFilter)}>
-                        {STATUS_CONFIG[s]?.label || s} <X className="h-3 w-3 ml-1" />
-                      </Badge>
-                    ))}
-                    {empresaFilter.map(e => (
-                      <Badge key={e} variant="default" className="cursor-pointer" onClick={() => toggleArrayFilter(e, empresaFilter, setEmpresaFilter)}>
-                        {e} <X className="h-3 w-3 ml-1" />
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Filters - Collapsible */}
+              <Collapsible open={showOverviewFilters} onOpenChange={setShowOverviewFilters}>
+                <Card className="border shadow-sm bg-white">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="pb-3 cursor-pointer select-none hover:bg-slate-50/50 transition-colors rounded-t-lg">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Filter className="h-5 w-5" /> Filtros
+                          {(empresaFilter.length + clienteFilter.length + equipamentoFilter.length + criticidadeFilter.length + statusFilter.length + (periodFilter !== 'all' ? 1 : 0) + (estoqueFilter !== 'all' ? 1 : 0) + (searchTerm ? 1 : 0)) > 0 && (
+                            <Badge variant="secondary" className="ml-1 text-xs">{(empresaFilter.length + clienteFilter.length + equipamentoFilter.length + criticidadeFilter.length + statusFilter.length + (periodFilter !== 'all' ? 1 : 0) + (estoqueFilter !== 'all' ? 1 : 0) + (searchTerm ? 1 : 0))} ativos</Badge>
+                          )}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          {(empresaFilter.length + clienteFilter.length + equipamentoFilter.length + criticidadeFilter.length + statusFilter.length + (periodFilter !== 'all' ? 1 : 0) + (estoqueFilter !== 'all' ? 1 : 0) + (searchTerm ? 1 : 0)) > 0 && (
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); clearFilters(); }}>
+                              <X className="h-4 w-4 mr-1" /> Limpar
+                            </Button>
+                          )}
+                          <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${showOverviewFilters ? 'rotate-180' : ''}`} />
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        <div className="sm:col-span-2 lg:col-span-2">
+                          <Input placeholder="Buscar por PN, descrição, cliente..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        </div>
+                        <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                          <SelectTrigger className="w-full"><SelectValue placeholder="Período" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todo período</SelectItem>
+                            <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                            <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                            <SelectItem value="90d">Últimos 90 dias</SelectItem>
+                            <SelectItem value="2024">2024</SelectItem>
+                            <SelectItem value="2025">2025</SelectItem>
+                            <SelectItem value="2026">2026</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={estoqueFilter} onValueChange={(v) => setEstoqueFilter(v as 'all' | 'lic' | 'betim')}>
+                          <SelectTrigger className="w-full"><SelectValue placeholder="Estoque" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todo estoque</SelectItem>
+                            <SelectItem value="lic">Com LIC</SelectItem>
+                            <SelectItem value="betim">Com Betim</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {criticidades.map(c => (
+                          <Badge key={c} variant={criticidadeFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer"
+                            style={{ backgroundColor: criticidadeFilter.includes(c) ? CRITICITY_COLORS[c] : 'transparent', borderColor: CRITICITY_COLORS[c], color: criticidadeFilter.includes(c) ? 'white' : CRITICITY_COLORS[c] }}
+                            onClick={() => toggleArrayFilter(c, criticidadeFilter, setCriticidadeFilter)}>
+                            {c}
+                          </Badge>
+                        ))}
+                        {statusFilter.map(s => (
+                          <Badge key={s} variant="default" className="cursor-pointer" onClick={() => toggleArrayFilter(s, statusFilter, setStatusFilter)}>
+                            {STATUS_CONFIG[s]?.label || s} <X className="h-3 w-3 ml-1" />
+                          </Badge>
+                        ))}
+                        {empresaFilter.map(e => (
+                          <Badge key={e} variant="default" className="cursor-pointer" onClick={() => toggleArrayFilter(e, empresaFilter, setEmpresaFilter)}>
+                            {e} <X className="h-3 w-3 ml-1" />
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
 
               {/* Charts - 2 columns */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1165,147 +1182,159 @@ export default function SalesOpportunityDashboard() {
 
             {/* ===== OPPORTUNITIES TAB ===== */}
             <TabsContent value="opportunities" className="space-y-4">
-              {/* Filters */}
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Filter className="h-5 w-5" /> Filtros
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{oppFilteredData.length} de {data.length}</Badge>
-                      <Button variant="ghost" size="sm" onClick={clearOppFilters}>
-                        <X className="h-4 w-4 mr-1" /> Limpar
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Input placeholder="Buscar por PN, descrição, cliente..." value={oppSearchTerm} onChange={(e) => setOppSearchTerm(e.target.value)} className="w-full sm:w-[240px]" />
-                  </div>
-
-                  <div className="space-y-3">
-                    {/* Origem badges */}
-                    {origens.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs font-medium text-slate-500 mr-1">Origem:</span>
-                        {origens.map(o => (
-                          <Badge key={o} variant={oppOrigemFilter.includes(o) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                            onClick={() => toggleArrayFilter(o, oppOrigemFilter, setOppOrigemFilter)}>
-                            {o.replace('PAS SVS ', '')}
-                            {oppOrigemFilter.includes(o) && <X className="h-3 w-3 ml-1" />}
-                          </Badge>
-                        ))}
+              {/* Filters - Collapsible */}
+              <Collapsible open={showOppFilters} onOpenChange={setShowOppFilters}>
+                <Card className="border-0 shadow-md">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="pb-3 cursor-pointer select-none hover:bg-slate-50/50 transition-colors rounded-t-lg">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Filter className="h-5 w-5" /> Filtros
+                          <Badge variant="outline">{oppFilteredData.length} de {data.length}</Badge>
+                          {(oppMonthFilter.length + oppYearFilter.length + oppClienteFilter.length + oppStatusFilter.length + oppCriticidadeFilter.length + oppDiasFilter.length + oppAnaliseFilter.length + oppPrazoFilter.length + oppOrigemFilter.length + (oppSearchTerm ? 1 : 0)) > 0 && (
+                            <Badge variant="secondary" className="text-xs">{(oppMonthFilter.length + oppYearFilter.length + oppClienteFilter.length + oppStatusFilter.length + oppCriticidadeFilter.length + oppDiasFilter.length + oppAnaliseFilter.length + oppPrazoFilter.length + oppOrigemFilter.length + (oppSearchTerm ? 1 : 0))} ativos</Badge>
+                          )}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          {(oppMonthFilter.length + oppYearFilter.length + oppClienteFilter.length + oppStatusFilter.length + oppCriticidadeFilter.length + oppDiasFilter.length + oppAnaliseFilter.length + oppPrazoFilter.length + oppOrigemFilter.length + (oppSearchTerm ? 1 : 0)) > 0 && (
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); clearOppFilters(); }}>
+                              <X className="h-4 w-4 mr-1" /> Limpar
+                            </Button>
+                          )}
+                          <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${showOppFilters ? 'rotate-180' : ''}`} />
+                        </div>
                       </div>
-                    )}
-
-                    {/* Mês badges */}
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-medium text-slate-500 mr-1">Mês:</span>
-                      {MONTHS.map(m => (
-                        <Badge key={m.value} variant={oppMonthFilter.includes(m.value) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                          onClick={() => toggleArrayFilter(m.value, oppMonthFilter, setOppMonthFilter)}>
-                          {m.label}
-                          {oppMonthFilter.includes(m.value) && <X className="h-3 w-3 ml-1" />}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Ano badges */}
-                    {availableYears.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs font-medium text-slate-500 mr-1">Ano:</span>
-                        {availableYears.map(y => (
-                          <Badge key={y} variant={oppYearFilter.includes(y) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                            onClick={() => toggleArrayFilter(y, oppYearFilter, setOppYearFilter)}>
-                            {y}
-                            {oppYearFilter.includes(y) && <X className="h-3 w-3 ml-1" />}
-                          </Badge>
-                        ))}
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Input placeholder="Buscar por PN, descrição, cliente..." value={oppSearchTerm} onChange={(e) => setOppSearchTerm(e.target.value)} className="w-full sm:w-[240px]" />
                       </div>
-                    )}
 
-                    {/* Cliente badges */}
-                    {clientes.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs font-medium text-slate-500 mr-1">Cliente:</span>
-                        {clientes.map(c => (
-                          <Badge key={c} variant={oppClienteFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                            onClick={() => toggleArrayFilter(c, oppClienteFilter, setOppClienteFilter)}>
-                            {c}
-                            {oppClienteFilter.includes(c) && <X className="h-3 w-3 ml-1" />}
-                          </Badge>
-                        ))}
+                      <div className="space-y-3">
+                        {/* Origem badges */}
+                        {origens.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-xs font-medium text-slate-500 mr-1">Origem:</span>
+                            {origens.map(o => (
+                              <Badge key={o} variant={oppOrigemFilter.includes(o) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                                onClick={() => toggleArrayFilter(o, oppOrigemFilter, setOppOrigemFilter)}>
+                                {o.replace('PAS SVS ', '')}
+                                {oppOrigemFilter.includes(o) && <X className="h-3 w-3 ml-1" />}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Mês badges */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-medium text-slate-500 mr-1">Mês:</span>
+                          {MONTHS.map(m => (
+                            <Badge key={m.value} variant={oppMonthFilter.includes(m.value) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                              onClick={() => toggleArrayFilter(m.value, oppMonthFilter, setOppMonthFilter)}>
+                              {m.label}
+                              {oppMonthFilter.includes(m.value) && <X className="h-3 w-3 ml-1" />}
+                            </Badge>
+                          ))}
+                        </div>
+
+                        {/* Ano badges */}
+                        {availableYears.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-xs font-medium text-slate-500 mr-1">Ano:</span>
+                            {availableYears.map(y => (
+                              <Badge key={y} variant={oppYearFilter.includes(y) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                                onClick={() => toggleArrayFilter(y, oppYearFilter, setOppYearFilter)}>
+                                {y}
+                                {oppYearFilter.includes(y) && <X className="h-3 w-3 ml-1" />}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Cliente badges */}
+                        {clientes.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-xs font-medium text-slate-500 mr-1">Cliente:</span>
+                            {clientes.map(c => (
+                              <Badge key={c} variant={oppClienteFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                                onClick={() => toggleArrayFilter(c, oppClienteFilter, setOppClienteFilter)}>
+                                {c}
+                                {oppClienteFilter.includes(c) && <X className="h-3 w-3 ml-1" />}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Status badges */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-medium text-slate-500 mr-1">Status:</span>
+                          {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                            <Badge key={key} variant={oppStatusFilter.includes(key) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                              style={oppStatusFilter.includes(key) ? { backgroundColor: cfg.color, color: 'white', borderColor: cfg.color } : { borderColor: cfg.color, color: cfg.color }}
+                              onClick={() => toggleArrayFilter(key, oppStatusFilter, setOppStatusFilter)}>
+                              {cfg.label}
+                              {oppStatusFilter.includes(key) && <X className="h-3 w-3 ml-1" />}
+                            </Badge>
+                          ))}
+                        </div>
+
+                        {/* Criticidade badges */}
+                        {criticidades.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-xs font-medium text-slate-500 mr-1">Criticidade:</span>
+                            {criticidades.map(c => (
+                              <Badge key={c} variant={oppCriticidadeFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                                style={oppCriticidadeFilter.includes(c) ? { backgroundColor: CRITICITY_COLORS[c], color: 'white', borderColor: CRITICITY_COLORS[c] } : { borderColor: CRITICITY_COLORS[c], color: CRITICITY_COLORS[c] }}
+                                onClick={() => toggleArrayFilter(c, oppCriticidadeFilter, setOppCriticidadeFilter)}>
+                                {c}
+                                {oppCriticidadeFilter.includes(c) && <X className="h-3 w-3 ml-1" />}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Dias badges */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-medium text-slate-500 mr-1">Dias Aberto:</span>
+                          {[{ v: '<30', l: '< 30 dias' }, { v: '30-60', l: '30-60 dias' }, { v: '>60', l: '> 60 dias' }, { v: '>90', l: '> 90 dias' }].map(d => (
+                            <Badge key={d.v} variant={oppDiasFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                              onClick={() => toggleArrayFilter(d.v, oppDiasFilter, setOppDiasFilter)}>
+                              {d.l}
+                              {oppDiasFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
+                            </Badge>
+                          ))}
+                        </div>
+
+                        {/* Análise badges */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-medium text-slate-500 mr-1">Análise:</span>
+                          {[{ v: 'completos', l: 'Completos' }, { v: 'incompletos', l: 'Incompletos' }, { v: 'com_followup', l: 'Com Follow Up' }, { v: 'sem_followup', l: 'Sem Follow Up' }].map(d => (
+                            <Badge key={d.v} variant={oppAnaliseFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                              onClick={() => toggleArrayFilter(d.v, oppAnaliseFilter, setOppAnaliseFilter)}>
+                              {d.l}
+                              {oppAnaliseFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
+                            </Badge>
+                          ))}
+                        </div>
+
+                        {/* Prazo badges */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-medium text-slate-500 mr-1">Prazo:</span>
+                          {[{ v: 'atrasados', l: 'Atrasados' }, { v: 'este_mes', l: 'Este Mês' }, { v: 'futuro', l: 'Futuro' }].map(d => (
+                            <Badge key={d.v} variant={oppPrazoFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
+                              onClick={() => toggleArrayFilter(d.v, oppPrazoFilter, setOppPrazoFilter)}>
+                              {d.l}
+                              {oppPrazoFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                    )}
-
-                    {/* Status badges */}
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-medium text-slate-500 mr-1">Status:</span>
-                      {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                        <Badge key={key} variant={oppStatusFilter.includes(key) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                          style={oppStatusFilter.includes(key) ? { backgroundColor: cfg.color, color: 'white', borderColor: cfg.color } : { borderColor: cfg.color, color: cfg.color }}
-                          onClick={() => toggleArrayFilter(key, oppStatusFilter, setOppStatusFilter)}>
-                          {cfg.label}
-                          {oppStatusFilter.includes(key) && <X className="h-3 w-3 ml-1" />}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Criticidade badges */}
-                    {criticidades.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs font-medium text-slate-500 mr-1">Criticidade:</span>
-                        {criticidades.map(c => (
-                          <Badge key={c} variant={oppCriticidadeFilter.includes(c) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                            style={oppCriticidadeFilter.includes(c) ? { backgroundColor: CRITICITY_COLORS[c], color: 'white', borderColor: CRITICITY_COLORS[c] } : { borderColor: CRITICITY_COLORS[c], color: CRITICITY_COLORS[c] }}
-                            onClick={() => toggleArrayFilter(c, oppCriticidadeFilter, setOppCriticidadeFilter)}>
-                            {c}
-                            {oppCriticidadeFilter.includes(c) && <X className="h-3 w-3 ml-1" />}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Dias badges */}
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-medium text-slate-500 mr-1">Dias Aberto:</span>
-                      {[{ v: '<30', l: '< 30 dias' }, { v: '30-60', l: '30-60 dias' }, { v: '>60', l: '> 60 dias' }, { v: '>90', l: '> 90 dias' }].map(d => (
-                        <Badge key={d.v} variant={oppDiasFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                          onClick={() => toggleArrayFilter(d.v, oppDiasFilter, setOppDiasFilter)}>
-                          {d.l}
-                          {oppDiasFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Análise badges */}
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-medium text-slate-500 mr-1">Análise:</span>
-                      {[{ v: 'completos', l: 'Completos' }, { v: 'incompletos', l: 'Incompletos' }, { v: 'com_followup', l: 'Com Follow Up' }, { v: 'sem_followup', l: 'Sem Follow Up' }].map(d => (
-                        <Badge key={d.v} variant={oppAnaliseFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                          onClick={() => toggleArrayFilter(d.v, oppAnaliseFilter, setOppAnaliseFilter)}>
-                          {d.l}
-                          {oppAnaliseFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Prazo badges */}
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-medium text-slate-500 mr-1">Prazo:</span>
-                      {[{ v: 'atrasados', l: 'Atrasados' }, { v: 'este_mes', l: 'Este Mês' }, { v: 'futuro', l: 'Futuro' }].map(d => (
-                        <Badge key={d.v} variant={oppPrazoFilter.includes(d.v) ? 'default' : 'outline'} className="cursor-pointer text-xs"
-                          onClick={() => toggleArrayFilter(d.v, oppPrazoFilter, setOppPrazoFilter)}>
-                          {d.l}
-                          {oppPrazoFilter.includes(d.v) && <X className="h-3 w-3 ml-1" />}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
 
               {/* KPIs */}
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2">
